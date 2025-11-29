@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.UI;
+
 
 public class MenuController : MonoBehaviour
 {
@@ -7,7 +9,7 @@ public class MenuController : MonoBehaviour
     [SerializeField] private GameObject modeMenu;  // your "ModeMenu" panel
     [SerializeField] private GameObject gamePanel;  // your "ModeMenu" panel
     [SerializeField] private TimerScript timer;
-
+    public Text gameOverLabel;
     void Awake()
     {
         ShowStartMenu();
@@ -36,4 +38,13 @@ public class MenuController : MonoBehaviour
         timer.ResetTimer();
         timer.StartTimer();
     }
+    
+    public void SetSinglePlayerGameOverText(Text targetText)
+    {
+        if (targetText != null)
+        {
+            targetText.text = "Game Over";
+        }
+    }
+
 }

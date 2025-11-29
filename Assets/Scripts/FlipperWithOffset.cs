@@ -1,53 +1,47 @@
 using UnityEngine;
-using UnityEngine.InputSystem; // NEW input system
+using UnityEngine.InputSystem;
 
 public class FlipperWithOffset : MonoBehaviour
 {
     [Header("Angles")]
-    public float restAngle  = -30f;   // e.g., left flipper at rest
-    public float activeAngle = 30f;   // left flipper pressed
+    public float restAngle = -30f;
+    public float activeAngle = 30f;
 
-    [Header("Y Positions (UI/World-Space compensation)")]
-    public float restY   = -420f;
+    [Header("Y Positions")]
+    public float restY = -420f;
     public float activeY = -335f;
 
     [Header("Motion")]
-    public float rotateSpeedDegPerSec = 600f; // rotation speed
-    public float ySnapSpeed = 8f;            // how quickly we move to target Y
+    public float rotateSpeedDegPerSec = 600f;
+    public float ySnapSpeed = 8f;
 
-    [Header("Input (Keyboard)")]
-    public bool useLeftArrow = true;   // left flipper → LeftArrow, right flipper → RightArrow
+    [Header("Input (Keyboard for Multiplayer)")]
+    public bool useLeftArrow = true;
 
-    // Optional: if you prefer an InputAction in your InputActions asset, assign it here:
-    [Header("Optional: InputAction")]
-    public InputActionReference pressAction; // expects a Button action, performed while pressed
+    [Header("Optional New Input System Action")]
+    public InputActionReference pressAction;
 
     float _targetAngle;
     float _targetY;
+    bool aiActive = false;
 
     void OnEnable()
     {
         if (pressAction != null)
-        {
             pressAction.action.Enable();
-        }
     }
 
     void OnDisable()
     {
         if (pressAction != null)
-        {
             pressAction.action.Disable();
-        }
     }
 
     bool IsPressed()
     {
-        // If an InputAction is provided, use it first
         if (pressAction != null)
             return pressAction.action.IsPressed();
 
-        // Fallback to Keyboard (works in new Input System)
         var kb = Keyboard.current;
         if (kb == null) return false;
 
@@ -57,20 +51,48 @@ public class FlipperWithOffset : MonoBehaviour
 
     void Update()
     {
-        bool pressed = IsPressed();
+        bool pressed = false;
+
+        var mode = GameManager.Instance.currentMode;
+
+        if (mode == GameMode.Multiplayer)
+        {
+            pressed = IsPressed();
+        }
+        else if (mode == GameMode.SinglePlayer)
+        {
+            pressed = aiActive;   // AI replaces pressed input
+        }
 
         _targetAngle = pressed ? activeAngle : restAngle;
-        _targetY     = pressed ? activeY     : restY;
+        _targetY = pressed ? activeY : restY;
 
-        // Rotate smoothly toward target Z
+        // apply rotation
         float currentZ = transform.localEulerAngles.z;
-        float nextZ = Mathf.MoveTowardsAngle(currentZ, _targetAngle, rotateSpeedDegPerSec * Time.deltaTime);
+        float nextZ = Mathf.MoveTowardsAngle(
+            currentZ,
+            _targetAngle,
+            rotateSpeedDegPerSec * Time.deltaTime
+        );
         transform.localEulerAngles = new Vector3(0f, 0f, nextZ);
 
-        // Move Y to compensate for visual pivot offset
+        // apply Y offset
         var lp = transform.localPosition;
         float yStep = Mathf.Abs(activeY - restY) * ySnapSpeed * Time.deltaTime;
         lp.y = Mathf.MoveTowards(lp.y, _targetY, yStep);
         transform.localPosition = lp;
     }
+
+    // -------- AI CONTROL METHODS --------
+
+    public void ForceFlip()
+    {
+        aiActive = true;
+    }
+
+    public void ReleaseFlipper()
+    {
+        aiActive = false;
+    }
+
 }

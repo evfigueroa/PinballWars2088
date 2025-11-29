@@ -5,6 +5,10 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(Rigidbody2D), typeof(Collider2D))]
 public class PlayerController2D : MonoBehaviour
 {
+    [Header("Multiplayer")]
+    public bool multiplayerMode = false;
+    public MultiplayerManager multiplayerManager;
+
     public float moveSpeed = 6f;
     public int maxHealth = 3;
     public float iFrames = 0.4f;
@@ -70,16 +74,31 @@ public class PlayerController2D : MonoBehaviour
 
     void GameOver()
     {
+        // Multiplayer path: tell the MultiplayerManager instead of showing GameOver right away
+        if (multiplayerMode && multiplayerManager != null)
+        {
+            multiplayerManager.OnPlayerDied();
+            return;
+        }
+
+        // Single-player path: existing behavior
         if (gameOverPanel && !gameOverPanel.activeSelf)
         {
             gameOverPanel.SetActive(true);
+            var gom = gameOverPanel.GetComponent<GameOverMenu>();
+            if (gom != null)
+            {
+                gom.ResetResultText();
+            }
+
             Time.timeScale = 0f;
         }
 
-        // prevent repeated triggers
-        health = 3; // reset so it doesn’t fire again
+        // reset so it doesn’t fire again
+        health = maxHealth;
         UpdateHealthUI();
     }
+
     public void ResetHealth()
     {
         health = maxHealth;
